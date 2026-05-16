@@ -10,9 +10,32 @@ Power Rankings card prototype v2 built (May 15, 2026) — ready for second revie
 Comprehensive project context lives in auto-memory: `project_shareable_assets.md`. That file holds the strategy, success metrics, design direction, key decisions, prototype details, parallel tracks (Power Rankings card), and open questions. Read it at the start of any session in this folder.
 
 ## What's in this folder
-- `athletic-player-card-prototype.html` — clickable prototype (no server needed). Demonstrates: article view → share sheet → iMessage → recipient deep-link landing → registration prompt.
-- `athletic-power-rankings-prototype.html` — Power Rankings card prototype. Six MLB team cards in an article scroll, mix of photo and logo+color treatments, conditional emphasis on movement (big up/down chips for ±3 or more). Same share flow pattern as the player card. Requires a local server because the player photos are referenced relatively from `prototype-assets/`. To view: `cd shareable-assets && python3 -m http.server 8765`, then open http://localhost:8765/athletic-power-rankings-prototype.html
-- `prototype-assets/` — local copies of player photos (Acuña, Ohtani, Misiorowski, Murakami) sourced from Wikimedia Commons.
+- `index.html` — landing page that redirects to the current Power Rankings prototype, also lists the v1 archive and the player card prototype.
+- `athletic-power-rankings-prototype.html` — Power Rankings card prototype (current). All 30 MLB teams; mix of player action shots and stadium fallbacks; conditional emphasis for big movers; share flow → iMessage compose → received → recipient article landing.
+- `athletic-power-rankings-prototype-v1.html` — Power Rankings prototype v1 (archived).
+- `athletic-player-card-prototype.html` — Player card prototype (separate format).
+- `prototype-assets/` — player photos + stadium photos sourced from Wikimedia Commons.
+
+## Live deployment
+Hosted on GitHub Pages at **https://walkerfullerton-nyt.github.io/power-rankings-prototype/**
+
+Repo: https://github.com/walkerfullerton-nyt/power-rankings-prototype (public)
+
+To push edits live:
+```
+cd ~/Documents/claude-code-work/shareable-assets
+git add .
+git commit -m "what changed"
+git push
+```
+Pages rebuilds automatically in ~30–60 seconds. Or just ask Claude to "deploy" or "push" — the working directory is already a git repo with origin set.
+
+To view locally instead (e.g. while iterating):
+```
+cd ~/Documents/claude-code-work/shareable-assets
+python3 -m http.server 8765
+# then open http://localhost:8765/
+```
 
 ## Working principles
 - Frame every design choice against two questions: (1) Does this feel visually compelling as a standalone unit? (2) Does the design make sharing feel obvious and natural?
