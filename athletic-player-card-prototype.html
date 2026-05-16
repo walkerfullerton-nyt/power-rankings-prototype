@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>The Athletic — Player Card Prototype</title>
+  <style>
+    :root {
+      --pink:    #FF4D94;
+      --pink-dim: rgba(255,77,148,0.15);
+      --card-bg: #0d0d0d;
+      --card-sub: #141414;
+      --border:  #222;
+      --text:    #ffffff;
+      --muted:   #666666;
+      --article-bg: #ffffff;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-tap-highlight-color: transparent; }
+    body { background: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; }
+
+    /* ─── PHONE SHELL ─── */
+    .phone {
+      max-width: 390px;
+      margin: 0 auto;
+      background: var(--article-bg);
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ─── SCREENS ─── */
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: block; }
+
+    /* ══════════════════════════════
+       ARTICLE CHROME (light mode)
+    ══════════════════════════════ */
+    .a-status {
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px 6px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #000;
+    }
+    .a-nav {
+      background: #fff;
+      border-bottom: 1px solid #e8e8e8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px 10px;
+    }
+    .a-back { font-size: 28px; line-height: 1; color: #000; cursor: pointer; }
+    .a-actions { display: flex; gap: 18px; align-items: center; color: #000; font-size: 15px; }
+
+    .a-scroll {
+      background: #fff;
+      height: calc(100vh - 88px);
+      overflow-y: auto;
+      padding-bottom: 60px;
+    }
+
+    /* hero image */
+    .a-hero {
+      width: 100%;
+      height: 230px;
+      object-fit: cover;
+      display: block;
+      background: #e8e8e8;
+    }
+    .a-hero-placeholder {
+      width: 100%;
+      height: 230px;
+      background: linear-gradient(155deg, #1a2f1a 0%, #0a160a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #555;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .a-byline-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px 6px;
+    }
+    .a-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: #ccc;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .a-byline-text { font-size: 13px; color: #555; }
+    .a-byline-text strong { color: #111; font-weight: 600; }
+
+    .a-share-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 4px 16px 14px;
+      border-bottom: 1px solid #eee;
+    }
+    .a-share-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #111;
+      cursor: pointer;
+    }
+    .a-share-icon {
+      width: 28px; height: 28px;
+      border: 1.5px solid #ccc;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .a-sep { color: #ccc; font-size: 18px; }
+
+    .a-meta { padding: 16px 16px 10px; }
+    .a-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    .a-title {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #0d0d0d;
+    }
+
+    .a-body { padding: 16px 16px 0; }
+    .a-body p {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 17px;
+      line-height: 1.72;
+      color: #1a1a1a;
+      margin-bottom: 20px;
+    }
+
+    /* ══════════════════════════════
+       PLAYER CARD — New visual design
+    ══════════════════════════════ */
+    .player-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 4px 0 24px;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.22);
+    }
+    .player-card.highlight {
+      box-shadow: 0 0 0 2px var(--pink), 0 6px 28px rgba(0,0,0,0.22);
+    }
+
+    /* Photo area with overlay */
+    .card-photo-wrap {
+      position: relative;
+      height: 185px;
+      overflow: hidden;
+      background: #111;
+    }
+    .card-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 10%;
+      display: block;
+    }
+    .card-photo-grad {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 25%, rgba(5,5,5,0.92) 100%);
+    }
+    .card-accent-bar {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 4px;
+      background: linear-gradient(to bottom, #FF4D94, #C2185B);
+      z-index: 2;
+    }
+    .card-id-overlay {
+      position: absolute;
+      bottom: 12px;
+      left: 16px;
+      right: 16px;
+      z-index: 2;
+    }
+    .card-pname {
+      font-size: 22px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.5px;
+      line-height: 1.05;
+    }
+    .card-psub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.65);
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    /* Insight callout */
+    .insight-band {
+      background: var(--pink-dim);
+      border-left: 3px solid var(--pink);
+      padding: 9px 14px 9px 13px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #FF8DC0;
+      line-height: 1.45;
+    }
+    .insight-band em { font-style: normal; color: #fff; font-weight: 600; }
+
+    /* Stats */
+    .card-stats {
+      padding: 14px 16px 16px;
+      background: var(--card-bg);
+    }
+    .card-season {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .stats-row { display: flex; justify-content: space-around; }
+    .stat { text-align: center; }
+    .stat-n {
+      font-size: 32px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+    .stat-l {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-top: 5px;
+    }
+    .stat-div {
+      width: 1px;
+      background: var(--border);
+      margin: 4px 0;
+      align-self: stretch;
+    }
+
+    /* Footer */
+    .card-footer {
+      background: var(--card-sub);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+    }
+    .c-brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #555;
+    }
+    .c-brand-dot {
+      width: 16px; height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 900;
+      color: #000;
+    }
+    .btn-share {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--pink);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      border: none;
+      letter-spacing: 0.3px;
+    }
+    .btn-share:active { opacity: 0.82; transform: scale(0.97); }
+
+    /* ══════════════════════════════
+       SHARE OVERLAY
+    ══════════════════════════════ */
+    #share-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 300;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    #share-overlay.open { display: flex; }
+
+    .ov-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+    }
+    .sheet {
+      position: relative;
+      z-index: 1;
+      background: #f2f2f7;
+      border-radius: 14px 14px 0 0;
+      padding: 8px 0 44px;
+    }
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: #c7c7cc;
+      border-radius: 2px;
+      margin: 0 auto 14px;
+    }
+    .sheet-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px 14px;
+    }
+    .sheet-title { font-size: 17px; font-weight: 600; color: #000; }
+    .sheet-x {
+      width: 28px; height: 28px;
+      background: #e5e5ea;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #555;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    /* Card preview in sheet */
+    .sheet-card-wrap {
+      margin: 0 20px 14px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.15);
+    }
+    .sheet-card-header {
+      background: #000;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sheet-card-header .brand-name { font-size: 12px; font-weight: 700; color: #fff; letter-spacing: 1px; text-transform: uppercase; }
+    .sheet-card-header .gift-tag { font-size: 12px; color: rgba(255,255,255,0.65); }
+
+    /* mini card inside sheet */
+    .sheet-mini-card {
+      background: var(--card-bg);
+    }
+    .sheet-mini-card .card-photo-wrap { height: 120px; }
+    .sheet-mini-card .card-pname { font-size: 17px; }
+    .sheet-mini-card .card-psub { font-size: 11px; }
+    .sheet-mini-card .insight-band { font-size: 11px; padding: 7px 12px 7px 11px; }
+    .sheet-mini-card .card-stats { padding: 10px 14px 12px; }
+    .sheet-mini-card .stat-n { font-size: 22px; }
+    .sheet-mini-card .card-footer { padding: 8px 14px; }
+    .sheet-mini-card .btn-share { display: none; }
+
+    .sheet-card-title {
+      padding: 12px 20px 4px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #000;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .sheet-share-text {
+      padding: 4px 20px 16px;
+      text-align: center;
+    }
+    .sheet-share-text p { font-size: 14px; color: #333; margin-bottom: 3px; }
+    .sheet-share-text a { font-size: 13px; color: #007aff; }
+
+    .sheet-apps { display: flex; justify-content: space-around; padding: 0 8px; }
+    .s-app { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 4px 0; }
+    .s-app:active { opacity: 0.7; }
+    .s-ico {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+    }
+    .ico-copy { background: #e5e5ea; }
+    .ico-msg  { background: #34c759; }
+    .ico-wa   { background: #25d366; }
+    .ico-ig   { background: linear-gradient(135deg, #f09433 0%, #dc2743 50%, #bc1888 100%); }
+    .ico-mail { background: #007aff; }
+    .s-lbl { font-size: 11px; color: #111; }
+
+    /* ══════════════════════════════
+       iMESSAGE SCREEN
+    ══════════════════════════════ */
+    #screen-message { background: #fff; }
+
+    .imsg-status {
+      background: #f2f2f7;
+      padding: 14px 20px 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 15px;
+      font-weight: 600;
+      color: #000;
+    }
+    .imsg-nav {
+      background: #f2f2f7;
+      border-bottom: 1px solid #e5e5ea;
+      padding: 8px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .imsg-back { color: #007aff; font-size: 17px; cursor: pointer; flex-shrink: 0; }
+    .imsg-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%; background: #8e8e93;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .imsg-name { font-size: 16px; font-weight: 600; color: #000; }
+
+    .imsg-thread { padding: 20px 16px; padding-bottom: 100px; }
+    .imsg-ts { text-align: center; font-size: 12px; color: #8e8e93; margin-bottom: 16px; }
+
+    .imsg-bubble { max-width: 268px; margin-left: auto; }
+    .bubble-card {
+      background: var(--card-bg);
+      border-radius: 18px 18px 4px 18px;
+      overflow: hidden;
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+    .bubble-card:active { opacity: 0.85; }
+    .bubble-card .card-photo-wrap { height: 110px; }
+    .bubble-card .card-pname { font-size: 14px; }
+    .bubble-card .card-psub { font-size: 11px; }
+    .bubble-card .insight-band { font-size: 11px; padding: 6px 10px 6px 9px; }
+    .bubble-card .card-stats { padding: 8px 10px 10px; }
+    .bubble-card .card-season { font-size: 9px; margin-bottom: 6px; }
+    .bubble-card .stat-n { font-size: 18px; }
+    .bubble-card .stat-l { font-size: 9px; }
+    .bubble-card .card-footer { padding: 7px 10px; }
+    .bubble-card .c-brand { font-size: 10px; }
+    .bubble-card .c-brand-dot { width: 13px; height: 13px; font-size: 7px; }
+    .bubble-card .btn-share { display: none; }
+
+    .bubble-link {
+      background: #e9e9eb;
+      border-radius: 4px 18px 18px 18px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #007aff;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+    .bubble-link:active { opacity: 0.7; }
+
+    .imsg-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      max-width: 390px;
+      margin: 0 auto;
+      background: #f2f2f7;
+      border-top: 1px solid #e5e5ea;
+      padding: 8px 16px 34px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .imsg-input {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #c7c7cc;
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 15px;
+      color: #8e8e93;
+    }
+    .imsg-send {
+      width: 34px; height: 34px;
+      background: #34c759;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #fff;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .imsg-send:active { opacity: 0.75; }
+
+    /* ══════════════════════════════
+       RECIPIENT SCREEN
+    ══════════════════════════════ */
+    .free-banner {
+      background: #f0fff0;
+      border: 1px solid #b5eab5;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #2a7a2a;
+      line-height: 1.4;
+    }
+    .free-banner strong { display: block; font-weight: 700; margin-bottom: 1px; color: #1a5a1a; }
+
+    .reg-wall {
+      background: #f9f9f9;
+      border: 1px solid #e8e8e8;
+      border-radius: 12px;
+      padding: 24px 16px;
+      margin: 24px 0 0;
+      text-align: center;
+    }
+    .reg-wall h3 {
+      font-family: Georgia, serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #0d0d0d;
+      margin-bottom: 8px;
+    }
+    .reg-wall p {
+      font-family: -apple-system, sans-serif;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+    .btn-reg {
+      display: block;
+      background: #0d0d0d;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+    .btn-skip { font-size: 13px; color: #888; cursor: pointer; }
+
+    /* ── PROTO LABEL ── */
+    .proto-tag {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      color: rgba(255,255,255,0.45);
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+<div class="phone">
+
+<!-- ══════════════════════════════════════
+     SCREEN 1 — ARTICLE
+══════════════════════════════════════ -->
+<div id="screen-article" class="screen active" style="background:#fff">
+  <div class="a-status">
+    <span>9:41</span>
+    <span style="font-size:13px;font-weight:500;color:#000">●●● WiFi 🔋</span>
+  </div>
+  <div class="a-nav">
+    <span class="a-back">‹</span>
+    <div class="a-actions">
+      <span>💬 14</span>
+      <span>🔖</span>
+      <span>⬆</span>
+    </div>
+  </div>
+  <div class="a-scroll">
+    <!-- Hero photo -->
+    <img
+      class="a-hero"
+      src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Lionel_Messi_White_House_2026_%283x4_cropped%29.jpg/600px-Lionel_Messi_White_House_2026_%283x4_cropped%29.jpg"
+      alt="Article photo"
+      onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+    >
+    <div class="a-hero-placeholder" style="display:none">Article photo</div>
+
+    <div class="a-byline-row">
+      <div class="a-avatar" style="background:#d0d0d0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#555">AC</div>
+      <div class="a-byline-text">By <strong>Avi Creditor</strong></div>
+      <span style="color:#ccc">·</span>
+      <div class="a-byline-text">April 4, 2026</div>
+    </div>
+
+    <div class="a-share-row">
+      <div class="a-share-btn">
+        <div class="a-share-icon">⬆</div>
+        Share full article
+      </div>
+      <span class="a-sep">|</span>
+      <div class="a-share-btn" style="font-weight:400;color:#555">💬 14</div>
+    </div>
+
+    <div class="a-meta">
+      <div class="a-kicker">Soccer · Inter Miami</div>
+      <h1 class="a-title">Messi scores Inter Miami's first goal at Nu Stadium, Suárez salvages draw vs. Austin FC</h1>
+    </div>
+
+    <div class="a-body">
+      <p>Lionel Messi may not have scored the first goal at Inter Miami's new Nu Stadium, but he scored the home club's first goal. Four minutes after Guilherme Biro spoiled Inter Miami's party with a sixth-minute header from a corner kick, Messi answered.</p>
+
+      <p>His 67th-minute strike — a left-footed curler from the edge of the area — drew the largest roar of the night from the 72,000 in attendance. The goal was his ninth of the 2025 MLS season, and with it came this:</p>
+
+      <!-- ★ PLAYER CARD ★ -->
+      <div class="player-card">
+        <div class="card-photo-wrap">
+          <img
+            class="card-photo"
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/CINvMIA_2023-08-23_-_Lionel_Messi%2C_Tata_Martino_%28PXL_20230824_010525464%29_%28Messi_crop%29.jpg/400px-CINvMIA_2023-08-23_-_Lionel_Messi%2C_Tata_Martino_%28PXL_20230824_010525464%29_%28Messi_crop%29.jpg"
+            alt="Lionel Messi"
+            onerror="this.style.display='none';"
+          >
+          <div class="card-photo-grad"></div>
+          <div class="card-accent-bar"></div>
+          <div class="card-id-overlay">
+            <div class="card-pname">Lionel Messi</div>
+            <div class="card-psub">Inter Miami CF &nbsp;·&nbsp; #10 &nbsp;·&nbsp; ARG</div>
+          </div>
+        </div>
+        <div class="insight-band">
+          ⚡ <em>More goals than any other MLS striker</em> through the first 4 games of the 2025 season
+        </div>
+        <div class="card-stats">
+          <div class="card-season">2025 MLS Season</div>
+          <div class="stats-row">
+            <div class="stat"><div class="stat-n">9</div><div class="stat-l">Goals</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-n">3</div><div class="stat-l">Assists</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-n">47</div><div class="stat-l">Shots</div></div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="c-brand"><div class="c-brand-dot">A</div>The Athletic</div>
+          <button class="btn-share" onclick="openSheet()">↑ Share</button>
+        </div>
+      </div>
+
+      <p>Luis Suárez then leveled in the 81st minute, heading home a Messi cross to make it 2–2 — a result that felt like a missed opportunity for a Miami side that dominated long stretches of the second half.</p>
+      <p>The new 72,000-seat stadium, which replaced Chase Stadium, had been built partly to accommodate the demand that Messi's arrival generated. On nights like this, with the crowd on its feet for every Messi touch, the investment already seems justified.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SHARE OVERLAY (sits above article)
+══════════════════════════════════════ -->
+<div id="share-overlay">
+  <div class="ov-bg" onclick="closeSheet()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <span class="sheet-title">Share</span>
+      <div class="sheet-x" onclick="closeSheet()">×</div>
+    </div>
+
+    <!-- Player card as the shareable image -->
+    <div class="sheet-card-wrap">
+      <div class="sheet-card-header">
+        <span class="brand-name">The Athletic</span>
+        <span class="gift-tag">🎁 Gift article</span>
+      </div>
+      <div class="sheet-mini-card">
+        <div class="card-photo-wrap">
+          <img
+            class="card-photo"
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/CINvMIA_2023-08-23_-_Lionel_Messi%2C_Tata_Martino_%28PXL_20230824_010525464%29_%28Messi_crop%29.jpg/400px-CINvMIA_2023-08-23_-_Lionel_Messi%2C_Tata_Martino_%28PXL_20230824_010525464%29_%28Messi_crop%29.jpg"
+            alt="Lionel Messi"
+            onerror="this.style.display='none';"
+          >
+          <div class="card-photo-grad"></div>
+          <div class="card-accent-bar"></div>
+          <div class="card-id-overlay">
+            <div class="card-pname">Lionel Messi</div>
+            <div class="card-psub">Inter Miami CF &nbsp;·&nbsp; #10 &nbsp;·&nbsp; ARG</div>
+          </div>
+        </div>
+        <div class="insight-band">
+          ⚡ <em>More goals than any other MLS striker</em> through the first 4 games of 2025
+        </div>
+        <div class="card-stats">
+          <div class="card-season">2025 MLS Season</div>
+          <div class="stats-row">
+            <div class="stat"><div class="stat-n">9</div><div class="stat-l">Goals</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-n">3</div><div class="stat-l">Assists</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-n">47</div><div class="stat-l">Shots</div></div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="c-brand"><div class="c-brand-dot">A</div>The Athletic</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet-card-title">Messi's 2025 season stats</div>
+    <div class="sheet-share-text">
+      <p>Share this player card with anyone to read for free.</p>
+      <a href="#">Switch to standard link</a>
+    </div>
+    <div class="sheet-apps">
+      <div class="s-app"><div class="s-ico ico-copy">🔗</div><div class="s-lbl">Copy link</div></div>
+      <div class="s-app" onclick="goMessage()"><div class="s-ico ico-msg">💬</div><div class="s-lbl">Message</div></div>
+      <div class="s-app"><div class="s-ico ico-wa">📱</div><div class="s-lbl">WhatsApp</div></div>
+      <div class="s-app"><div class="s-ico ico-ig">📸</div><div class="s-lbl">Stories</div></div>
+      <div class="s-app"><div class="s-ico ico-mail">✉️</div><div class="s-lbl">Mail</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2 — iMESSAGE
+══════════════════════════════════════ -->
+<div id="screen-message" class="screen">
+  <div class="imsg-status">
+    <span>9:41</span>
+    <span style="font-size:13px;font-weight:500">●●● WiFi 🔋</span>
+  </div>
+  <div class="imsg-nav">
+    <span class="imsg-back" onclick="goBack('screen-article')">‹ Messages</span>
+    <div class="imsg-avatar">J</div>
+    <span class="imsg-name">Jamie</span>
+  </div>
+  <div class="imsg-thread">
+    <div class="imsg-ts">Today 9:41 AM</div>
+    <div class="imsg-bubble">
+      <!-- Card renders as message attachment — tap to open recipient view -->
+      <div class="bubble-card" onclick="goRecipient()">
+        <div class="card-photo-wrap">
+          <img
+            class="card-photo"
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/CINvMIA_2023-08-23_-_Lionel_Messi%2C_Tata_Martino_%28PXL_20230824_010525464%29_%28Messi_crop%29.jpg/400px-CINvMIA_2023-08-23_-_Lionel_Messi%2C_Tata_Martino_%28PXL_20230824_010525464%29_%28Messi_crop%29.jpg"
+            alt="Lionel Messi"
+            onerror="this.style.display='none';"
+          >
+          <div class="card-photo-grad"></div>
+          <div class="card-accent-bar"></div>
+          <div class="card-id-overlay">
+            <div class="card-pname">Lionel Messi</div>
+            <div class="card-psub">Inter Miami CF &nbsp;·&nbsp; #10 &nbsp;·&nbsp; ARG</div>
+          </div>
+        </div>
+        <div class="insight-band">
+          ⚡ <em>More goals than any other MLS striker</em> through first 4 games of 2025
+        </div>
+        <div class="card-stats">
+          <div class="card-season">2025 MLS Season</div>
+          <div class="stats-row">
+            <div class="stat"><div class="stat-n">9</div><div class="stat-l">Goals</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-n">3</div><div class="stat-l">Assists</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-n">47</div><div class="stat-l">Shots</div></div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="c-brand"><div class="c-brand-dot">A</div>The Athletic</div>
+        </div>
+      </div>
+      <div class="bubble-link" onclick="goRecipient()">
+        athletic.com · Messi scores at Nu Stadium — tap to read →
+      </div>
+    </div>
+  </div>
+  <div class="imsg-bar">
+    <div class="imsg-input">iMessage</div>
+    <!-- FIXED: send button now navigates to recipient view -->
+    <button class="imsg-send" onclick="goRecipient()">↑</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3 — RECIPIENT ARTICLE VIEW
+══════════════════════════════════════ -->
+<div id="screen-recipient" class="screen" style="background:#fff">
+  <div class="a-status">
+    <span>9:41</span>
+    <span style="font-size:13px;font-weight:500;color:#000">●●● WiFi 🔋</span>
+  </div>
+  <div class="a-nav">
+    <span class="a-back">‹</span>
+    <div class="a-actions">
+      <span>💬 14</span>
+      <span>🔖</span>
+      <span>⬆</span>
+    </div>
+  </div>
+  <div class="a-scroll" id="recipient-scroll">
+    <img
+      class="a-hero"
+      src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Lionel_Messi_White_House_2026_%283x4_cropped%29.jpg/600px-Lionel_Messi_White_House_2026_%283x4_cropped%29.jpg"
+      alt="Article photo"
+      onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+    >
+    <div class="a-hero-placeholder" style="display:none">Article photo</div>
+
+    <div class="a-byline-row">
+      <div class="a-avatar" style="background:#d0d0d0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#555">AC</div>
+      <div class="a-byline-text">By <strong>Avi Creditor</strong></div>
+      <span style="color:#ccc">·</span>
+      <div class="a-byline-text">April 4, 2026</div>
+    </div>
+    <div class="a-share-row">
+      <div class="a-share-btn"><div class="a-share-icon">⬆</div>Share full article</div>
+      <span class="a-sep">|</span>
+      <div class="a-share-btn" style="font-weight:400;color:#555">💬 14</div>
+    </div>
+    <div class="a-meta">
+      <div class="a-kicker">Soccer · Inter Miami</div>
+      <h1 class="a-title">Messi scores Inter Miami's first goal at Nu Stadium, Suárez salvages draw vs. Austin FC</h1>
+    </div>
+    <div class="a-body">
+      <div class="free-banner">
+        <strong>You're reading a free article</strong>
+        Shared via The Athletic player card
+      </div>
+      <p>Lionel Messi may not have scored the first goal at Inter Miami's new Nu Stadium, but he scored the home club's first goal. Four minutes after Guilherme Biro spoiled Inter Miami's party with a sixth-minute header, Messi answered.</p>
+      <p>His 67th-minute strike drew the largest roar of the night from the 72,000 in attendance. The goal was his ninth of the 2025 MLS season:</p>
+
+      <!-- HIGHLIGHTED CARD = deep link destination -->
+      <div class="player-card highlight" id="target-card">
+        <div class="card-photo-wrap">
+          <img
+            class="card-photo"
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/CINvMIA_2023-08-23_-_Lionel_Messi%2C_Tata_Martino_%28PXL_20230824_010525464%29_%28Messi_crop%29.jpg/400px-CINvMIA_2023-08-23_-_Lionel_Messi%2C_Tata_Martino_%28PXL_20230824_010525464%29_%28Messi_crop%29.jpg"
+            alt="Lionel Messi"
+            onerror="this.style.display='none';"
+          >
+          <div class="card-photo-grad"></div>
+          <div class="card-accent-bar"></div>
+          <div class="card-id-overlay">
+            <div class="card-pname">Lionel Messi</div>
+            <div class="card-psub">Inter Miami CF &nbsp;·&nbsp; #10 &nbsp;·&nbsp; ARG</div>
+          </div>
+        </div>
+        <div class="insight-band">
+          ⚡ <em>More goals than any other MLS striker</em> through the first 4 games of the 2025 season
+        </div>
+        <div class="card-stats">
+          <div class="card-season">2025 MLS Season</div>
+          <div class="stats-row">
+            <div class="stat"><div class="stat-n">9</div><div class="stat-l">Goals</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-n">3</div><div class="stat-l">Assists</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-n">47</div><div class="stat-l">Shots</div></div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="c-brand"><div class="c-brand-dot">A</div>The Athletic</div>
+          <button class="btn-share">↑ Share</button>
+        </div>
+      </div>
+
+      <div class="reg-wall">
+        <h3>Read the full story</h3>
+        <p>Create a free account to keep reading The Athletic — and get more great sports journalism in your feed.</p>
+        <div class="btn-reg">Create free account</div>
+        <div class="btn-skip">Maybe later</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="proto-tag">Prototype · Click through to explore</div>
+</div>
+
+<script>
+  function openSheet() {
+    document.getElementById('share-overlay').classList.add('open');
+  }
+  function closeSheet() {
+    document.getElementById('share-overlay').classList.remove('open');
+  }
+  function goMessage() {
+    closeSheet();
+    switchTo('screen-message');
+  }
+  function goBack(id) {
+    switchTo(id);
+  }
+  function goRecipient() {
+    switchTo('screen-recipient');
+    setTimeout(() => {
+      const card = document.getElementById('target-card');
+      const scroller = document.getElementById('recipient-scroll');
+      scroller.scrollTo({ top: card.offsetTop - 20, behavior: 'smooth' });
+    }, 120);
+  }
+  function switchTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>

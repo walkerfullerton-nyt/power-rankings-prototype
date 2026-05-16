@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>The Athletic — Power Rankings Card Prototype v2</title>
+  <style>
+    :root {
+      --card-bg: #0d0d0d;
+      --card-sub: #141414;
+      --border: #222;
+      --text: #ffffff;
+      --muted: #666666;
+      --article-bg: #ffffff;
+      --up: #1ec27a;
+      --up-dim: rgba(30,194,122,0.18);
+      --down: #ff5961;
+      --down-dim: rgba(255,89,97,0.18);
+      --steady: #888;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-tap-highlight-color: transparent; }
+    body { background: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; }
+
+    /* ─── PHONE SHELL ─── */
+    .phone {
+      max-width: 390px;
+      margin: 0 auto;
+      background: var(--article-bg);
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ─── SCREENS ─── */
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: block; }
+
+    /* ══════════════════════════════
+       ARTICLE CHROME
+    ══════════════════════════════ */
+    .a-status {
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px 6px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #000;
+    }
+    .a-nav {
+      background: #fff;
+      border-bottom: 1px solid #e8e8e8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px 10px;
+    }
+    .a-back { font-size: 28px; line-height: 1; color: #000; cursor: pointer; }
+    .a-actions { display: flex; gap: 18px; align-items: center; color: #000; font-size: 15px; }
+
+    .a-scroll {
+      background: #fff;
+      height: calc(100vh - 88px);
+      overflow-y: auto;
+      padding-bottom: 80px;
+    }
+
+    .a-hero {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      object-position: center 30%;
+      display: block;
+      background: #e8e8e8;
+    }
+    .a-hero-cap {
+      padding: 8px 16px 0;
+      font-size: 12px;
+      color: #777;
+      line-height: 1.4;
+      font-style: italic;
+    }
+    .a-byline-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px 6px;
+    }
+    .a-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: #ccc;
+      flex-shrink: 0;
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #555;
+    }
+    .a-byline-text { font-size: 13px; color: #555; }
+    .a-byline-text strong { color: #111; font-weight: 600; }
+    .a-share-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 4px 16px 14px;
+      border-bottom: 1px solid #eee;
+    }
+    .a-share-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #111;
+      cursor: pointer;
+    }
+    .a-share-icon {
+      width: 28px; height: 28px;
+      border: 1.5px solid #ccc;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .a-sep { color: #ccc; font-size: 18px; }
+    .a-meta { padding: 16px 16px 10px; }
+    .a-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    .a-title {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #0d0d0d;
+    }
+    .a-body { padding: 16px 16px 0; }
+    .a-body p {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 17px;
+      line-height: 1.72;
+      color: #1a1a1a;
+      margin-bottom: 20px;
+    }
+    .a-body p.intro { font-size: 16px; }
+    .a-body p.stats-note {
+      font-size: 13px;
+      color: #777;
+      font-style: italic;
+      border-top: 1px solid #eee;
+      padding-top: 12px;
+      margin-bottom: 20px;
+    }
+
+    /* ══════════════════════════════
+       RANK CARD — In-article state
+       Each card sets --team-color and --team-color-2 inline.
+    ══════════════════════════════ */
+    .rank-card {
+      --team-color: #888;
+      --team-color-2: #444;
+      --team-color-dim: rgba(136,136,136,0.18);
+      background: var(--card-bg);
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 4px 0 22px;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.22);
+    }
+    .rank-card.highlight {
+      box-shadow: 0 0 0 2px var(--team-color), 0 8px 32px rgba(0,0,0,0.32);
+    }
+
+    /* Photo / hero area */
+    .rc-hero {
+      position: relative;
+      height: 175px;
+      overflow: hidden;
+      background: #111;
+    }
+    .rc-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 28%;
+      display: block;
+    }
+    .rc-grad {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 32%, rgba(5,5,5,0.95) 100%);
+      pointer-events: none;
+    }
+    /* Team accent stripe — left edge */
+    .rc-accent {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 5px;
+      background: linear-gradient(to bottom, var(--team-color), var(--team-color-2));
+      z-index: 2;
+    }
+
+    /* Rank block — bottom-left */
+    .rc-rank-block {
+      position: absolute;
+      bottom: 14px;
+      left: 16px;
+      z-index: 3;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+    .rc-rank-stack { display: flex; flex-direction: column; align-items: flex-start; }
+    .rc-rank-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.78);
+      margin-bottom: 1px;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.7);
+    }
+    .rc-rank-num {
+      font-size: 64px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 0.9;
+      letter-spacing: -3px;
+      text-shadow: 0 2px 14px rgba(0,0,0,0.45);
+    }
+    .rc-rank-num .hash {
+      font-size: 0.65em;
+      font-weight: 800;
+      vertical-align: 0.15em;
+      letter-spacing: -1px;
+      opacity: 0.85;
+    }
+    .rc-move {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+      margin-bottom: 8px;
+      backdrop-filter: blur(4px);
+    }
+    .rc-move.up { background: var(--up-dim); color: var(--up); border: 1px solid var(--up); }
+    .rc-move.down { background: var(--down-dim); color: var(--down); border: 1px solid var(--down); }
+    .rc-move.steady {
+      background: rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.55);
+      border: 1px solid rgba(255,255,255,0.22);
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      font-size: 8px;
+      padding: 3px 5px;
+      line-height: 1.05;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .rc-move.steady span { display: block; }
+
+    /* Team identity — bottom-right */
+    .rc-team-block {
+      position: absolute;
+      bottom: 14px;
+      right: 16px;
+      z-index: 3;
+      text-align: right;
+      max-width: 60%;
+    }
+    .rc-team-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.3px;
+      line-height: 1.1;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .rc-team-meta {
+      font-size: 11px;
+      color: rgba(255,255,255,0.78);
+      margin-top: 4px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
+    /* Share cluster — upper right (icon + "Share free" label as one pill) */
+    .rc-share-cluster {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 5px 4px 11px;
+      background: rgba(0,0,0,0.42);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .rc-share-cluster:hover, .rc-share-cluster:active {
+      background: var(--team-color);
+      border-color: var(--team-color);
+    }
+    .rc-share-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .rc-share-icon-wrap {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .rc-share-cluster:hover .rc-share-icon-wrap,
+    .rc-share-cluster:active .rc-share-icon-wrap {
+      background: rgba(255,255,255,0.25);
+    }
+    .rc-share-icon-wrap svg {
+      width: 12px; height: 12px;
+      stroke: #fff; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* Big-mover callout band — only renders for |movement| >= 3 */
+    .rc-mover-band {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      background: linear-gradient(to right, var(--mover-bg-start), var(--mover-bg-end));
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .rc-mover-band.up {
+      --mover-bg-start: rgba(30,194,122,0.18);
+      --mover-bg-end: rgba(30,194,122,0.04);
+    }
+    .rc-mover-band.down {
+      --mover-bg-start: rgba(255,89,97,0.18);
+      --mover-bg-end: rgba(255,89,97,0.04);
+    }
+    .rc-mover-arrow {
+      font-size: 24px;
+      line-height: 1;
+      flex-shrink: 0;
+      filter: drop-shadow(0 1px 4px rgba(0,0,0,0.4));
+    }
+    .rc-mover-band.up .rc-mover-arrow { color: var(--up); }
+    .rc-mover-band.down .rc-mover-arrow { color: var(--down); }
+    .rc-mover-text-wrap { flex: 1; }
+    .rc-mover-headline {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.05;
+      letter-spacing: -0.3px;
+    }
+    .rc-mover-headline em {
+      font-style: normal;
+      color: var(--up);
+    }
+    .rc-mover-band.down .rc-mover-headline em { color: var(--down); }
+    .rc-mover-context {
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 3px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
+    /* Insight band — the editorial headline (now team-colored) */
+    .rc-headline {
+      background: var(--team-color-dim);
+      border-left: 3px solid var(--team-color);
+      padding: 11px 14px 11px 13px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.4;
+      font-style: italic;
+    }
+    .rc-headline-label {
+      display: block;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--team-color);
+      margin-bottom: 3px;
+      font-style: normal;
+      filter: brightness(1.25) saturate(1.1);
+    }
+
+    /* Body text */
+    .rc-body {
+      padding: 13px 16px 14px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.95);
+    }
+    .rc-body p {
+      font-family: Georgia, serif;
+      color: rgba(255,255,255,0.95);
+      font-size: 14px;
+      line-height: 1.62;
+      margin-bottom: 12px;
+    }
+    .rc-body p:last-child { margin-bottom: 0; }
+    .rc-body p em { color: #fff; font-style: italic; }
+    .rc-body p strong { color: #fff; }
+    .rc-body-teaser {
+      padding: 12px 16px 14px;
+      font-family: Georgia, serif;
+      font-size: 13px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.85);
+    }
+    .rc-body-teaser .read-more {
+      color: var(--team-color);
+      font-weight: 700;
+      font-style: normal;
+      font-family: -apple-system, sans-serif;
+      letter-spacing: 0.2px;
+      filter: brightness(1.15);
+    }
+
+    /* Card footer */
+    .rc-footer {
+      background: var(--card-sub);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 16px;
+    }
+    .rc-byline {
+      font-size: 11px;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.3px;
+    }
+    .rc-byline strong { color: rgba(255,255,255,0.85); font-weight: 700; }
+    .rc-brand {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+    }
+    .rc-brand-dot {
+      width: 14px; height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 900;
+      color: #000;
+    }
+
+    /* ══════════════════════════════
+       SHARE OVERLAY
+    ══════════════════════════════ */
+    #share-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 300;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    #share-overlay.open { display: flex; }
+
+    .ov-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+    }
+    .sheet {
+      position: relative;
+      z-index: 1;
+      background: #f2f2f7;
+      border-radius: 14px 14px 0 0;
+      padding: 8px 0 44px;
+    }
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: #c7c7cc;
+      border-radius: 2px;
+      margin: 0 auto 14px;
+    }
+    .sheet-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px 14px;
+    }
+    .sheet-title { font-size: 17px; font-weight: 600; color: #000; }
+    .sheet-x {
+      width: 28px; height: 28px;
+      background: #e5e5ea;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #555;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .sheet-card-wrap {
+      margin: 0 20px 14px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.15);
+    }
+    .sheet-card-header {
+      background: #000;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sheet-card-header .brand-name { font-size: 12px; font-weight: 700; color: #fff; letter-spacing: 1px; text-transform: uppercase; }
+    .sheet-card-header .gift-tag { font-size: 12px; color: rgba(255,255,255,0.65); }
+
+    .sheet-mini { background: var(--card-bg); }
+    .sheet-mini .rc-hero { height: 145px; }
+    .sheet-mini .rc-rank-num { font-size: 52px; }
+    .sheet-mini .rc-team-name { font-size: 15px; }
+    .sheet-mini .rc-team-meta { font-size: 10px; }
+    .sheet-mini .rc-share-cluster { display: none; }
+    /* Context pill (top-left) for the share-state and bubble */
+    .rc-context-pill {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      z-index: 3;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.88);
+      text-shadow: 0 1px 6px rgba(0,0,0,0.7);
+    }
+    .bubble-card .rc-context-pill { font-size: 8px; top: 10px; left: 12px; letter-spacing: 1px; }
+    .sheet-mini .rc-headline { font-size: 12px; padding: 9px 12px 9px 11px; }
+    .sheet-mini .rc-mover-band { padding: 10px 14px; }
+    .sheet-mini .rc-mover-arrow { font-size: 20px; }
+    .sheet-mini .rc-mover-headline { font-size: 15px; }
+    .sheet-mini .rc-mover-context { font-size: 10px; }
+
+    .sheet-card-title {
+      padding: 12px 20px 4px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #000;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .sheet-share-text {
+      padding: 4px 20px 16px;
+      text-align: center;
+    }
+    .sheet-share-text p { font-size: 14px; color: #333; margin-bottom: 3px; }
+    .sheet-share-text a { font-size: 13px; color: #007aff; }
+
+    .sheet-apps { display: flex; justify-content: space-around; padding: 0 8px; }
+    .s-app { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 4px 0; }
+    .s-app:active { opacity: 0.7; }
+    .s-ico {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+    }
+    .ico-copy { background: #e5e5ea; }
+    .ico-msg  { background: #34c759; }
+    .ico-wa   { background: #25d366; }
+    .ico-ig   { background: linear-gradient(135deg, #f09433 0%, #dc2743 50%, #bc1888 100%); }
+    .ico-mail { background: #007aff; }
+    .s-lbl { font-size: 11px; color: #111; }
+
+    /* ══════════════════════════════
+       iMESSAGE — sender perspective
+    ══════════════════════════════ */
+    .imsg-base { background: #fff; }
+
+    .imsg-status {
+      background: #f2f2f7;
+      padding: 14px 20px 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 15px;
+      font-weight: 600;
+      color: #000;
+    }
+    .imsg-nav {
+      background: #f2f2f7;
+      border-bottom: 1px solid #e5e5ea;
+      padding: 8px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .imsg-back { color: #007aff; font-size: 17px; cursor: pointer; flex-shrink: 0; }
+    .imsg-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%; background: #8e8e93;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .imsg-name { font-size: 16px; font-weight: 600; color: #000; }
+    .imsg-thread { padding: 20px 16px; padding-bottom: 100px; }
+    .imsg-ts { text-align: center; font-size: 12px; color: #8e8e93; margin-bottom: 16px; }
+    .imsg-status-line {
+      text-align: right;
+      font-size: 11px;
+      color: #8e8e93;
+      margin-top: 4px;
+      padding-right: 4px;
+    }
+
+    /* Sent bubble (right side, blue) */
+    .imsg-bubble.sent { max-width: 268px; margin-left: auto; }
+    /* Received bubble (left side, grey) */
+    .imsg-bubble.received { max-width: 268px; margin-right: auto; }
+
+    .bubble-card {
+      background: var(--card-bg);
+      overflow: hidden;
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+    .bubble-card:active { opacity: 0.85; }
+    .imsg-bubble.sent .bubble-card { border-radius: 18px 18px 4px 18px; }
+    .imsg-bubble.received .bubble-card { border-radius: 18px 18px 18px 4px; }
+
+    .bubble-card .rc-hero { height: 110px; }
+    .bubble-card .rc-rank-num { font-size: 40px; }
+    .bubble-card .rc-team-name { font-size: 13px; }
+    .bubble-card .rc-team-meta { font-size: 9px; }
+    .bubble-card .rc-share-cluster { display: none; }
+    .bubble-card .rc-headline { font-size: 11px; padding: 7px 10px 7px 9px; }
+    .bubble-card .rc-mover-band { padding: 8px 12px; }
+    .bubble-card .rc-mover-arrow { font-size: 16px; }
+    .bubble-card .rc-mover-headline { font-size: 13px; }
+    .bubble-card .rc-mover-context { font-size: 9px; }
+    .bubble-card .rc-move { font-size: 10px; padding: 3px 6px; }
+    .bubble-card .rc-move.steady { font-size: 6px; padding: 2px 4px; letter-spacing: 0.3px; margin-bottom: 4px; }
+    .sheet-mini .rc-move.steady { font-size: 7px; padding: 3px 5px; }
+
+    .bubble-link {
+      background: #e9e9eb;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #007aff;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+    .imsg-bubble.sent .bubble-link { border-radius: 4px 18px 18px 18px; }
+    .imsg-bubble.received .bubble-link { border-radius: 18px 18px 18px 4px; }
+    .bubble-link:active { opacity: 0.7; }
+
+    .imsg-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      max-width: 390px;
+      margin: 0 auto;
+      background: #f2f2f7;
+      border-top: 1px solid #e5e5ea;
+      padding: 8px 16px 34px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .imsg-input {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #c7c7cc;
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 15px;
+      color: #555;
+    }
+    .imsg-input.placeholder { color: #8e8e93; }
+    .imsg-send {
+      width: 34px; height: 34px;
+      background: #34c759;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #fff;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .imsg-send:active { opacity: 0.75; transform: scale(0.94); }
+    .imsg-send.disabled { background: #c7c7cc; cursor: default; }
+
+    /* "delivered" stamp animation */
+    .imsg-delivered {
+      animation: deliveredFade 0.6s ease-out;
+    }
+    @keyframes deliveredFade {
+      0% { opacity: 0; transform: translateY(4px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════
+       RECIPIENT SCREEN — landing
+    ══════════════════════════════ */
+    .free-banner {
+      background: #f0fff0;
+      border: 1px solid #b5eab5;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin: 14px 16px 0;
+      font-size: 13px;
+      color: #2a7a2a;
+      line-height: 1.4;
+    }
+    .free-banner strong { display: block; font-weight: 700; margin-bottom: 1px; color: #1a5a1a; }
+
+    .reg-wall {
+      background: #f9f9f9;
+      border: 1px solid #e8e8e8;
+      border-radius: 12px;
+      padding: 24px 16px;
+      margin: 24px 16px 0;
+      text-align: center;
+    }
+    .reg-wall h3 {
+      font-family: Georgia, serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #0d0d0d;
+      margin-bottom: 8px;
+    }
+    .reg-wall p {
+      font-family: -apple-system, sans-serif;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+    .btn-reg {
+      display: block;
+      background: #0d0d0d;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      width: 100%;
+      border: none;
+    }
+    .btn-skip { font-size: 13px; color: #888; cursor: pointer; }
+
+    /* Proto label */
+    .proto-tag {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      color: rgba(255,255,255,0.45);
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 9999;
+    }
+    .scroll-marker {
+      text-align: center;
+      color: #aaa;
+      font-size: 13px;
+      font-style: italic;
+      padding: 12px 0 24px;
+    }
+  </style>
+</head>
+<body>
+<div class="phone">
+
+<!-- ══════════════════════════════════════
+     SCREEN 1 — ARTICLE
+══════════════════════════════════════ -->
+<div id="screen-article" class="screen active" style="background:#fff">
+  <div class="a-status">
+    <span>9:41</span>
+    <span style="font-size:13px;font-weight:500;color:#000">●●● WiFi 🔋</span>
+  </div>
+  <div class="a-nav">
+    <span class="a-back">‹</span>
+    <div class="a-actions">
+      <span>💬 32</span>
+      <span>🔖</span>
+      <span>⬆</span>
+    </div>
+  </div>
+  <div class="a-scroll" id="article-scroll">
+    <img class="a-hero" src="prototype-assets/whitesox.jpg" alt="Rate Field">
+    <div class="a-hero-cap">The White Sox reach a season high in our rankings courtesy of Munetaka Murakami's bat and emerging talent on the major-league roster.</div>
+
+    <div class="a-byline-row">
+      <div class="a-avatar">CJ</div>
+      <div class="a-byline-text">By <strong>Chad Jennings</strong>, <strong>Grant Brisbee</strong> and <strong>Zack Meisel</strong></div>
+    </div>
+    <div class="a-byline-row" style="padding-top:0">
+      <div class="a-byline-text" style="margin-left:40px">May 12, 2026</div>
+    </div>
+
+    <div class="a-share-row">
+      <div class="a-share-btn">
+        <div class="a-share-icon">⬆</div>
+        Share article
+      </div>
+      <span class="a-sep">|</span>
+      <div class="a-share-btn" style="font-weight:400;color:#555">💬 32</div>
+    </div>
+
+    <div class="a-meta">
+      <div class="a-kicker">MLB · Power Rankings · Week 7</div>
+      <h1 class="a-title">MLB Power Rankings: Every team has at least one reason to believe (right?)</h1>
+    </div>
+
+    <div class="a-body">
+      <p class="intro">At Power Rankings HQ, we're always wearing rose-colored glasses. This week, we're highlighting one reason to believe in each team.</p>
+      <p class="stats-note">All stats are through Monday unless otherwise noted.</p>
+      <div id="card-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SHARE OVERLAY
+══════════════════════════════════════ -->
+<div id="share-overlay">
+  <div class="ov-bg" onclick="closeSheet()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <span class="sheet-title">Share</span>
+      <div class="sheet-x" onclick="closeSheet()">×</div>
+    </div>
+    <div class="sheet-card-wrap">
+      <div class="sheet-card-header">
+        <span class="brand-name">The Athletic</span>
+        <span class="gift-tag">🎁 Free to read</span>
+      </div>
+      <div class="sheet-mini" id="share-mini"></div>
+    </div>
+    <div class="sheet-card-title" id="share-title"></div>
+    <div class="sheet-share-text">
+      <p>Anyone you share with can read for free.</p>
+      <a href="#">Switch to standard link</a>
+    </div>
+    <div class="sheet-apps">
+      <div class="s-app"><div class="s-ico ico-copy">🔗</div><div class="s-lbl">Copy link</div></div>
+      <div class="s-app" onclick="goCompose()"><div class="s-ico ico-msg">💬</div><div class="s-lbl">Message</div></div>
+      <div class="s-app"><div class="s-ico ico-wa">📱</div><div class="s-lbl">WhatsApp</div></div>
+      <div class="s-app"><div class="s-ico ico-ig">📸</div><div class="s-lbl">Stories</div></div>
+      <div class="s-app"><div class="s-ico ico-mail">✉️</div><div class="s-lbl">Mail</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2 — iMESSAGE COMPOSE (sender, before send)
+══════════════════════════════════════ -->
+<div id="screen-imsg-compose" class="screen imsg-base">
+  <div class="imsg-status">
+    <span>9:41</span>
+    <span style="font-size:13px;font-weight:500">●●● WiFi 🔋</span>
+  </div>
+  <div class="imsg-nav">
+    <span class="imsg-back" onclick="goBack('screen-article')">‹ Messages</span>
+    <div class="imsg-avatar">J</div>
+    <span class="imsg-name">Jamie</span>
+  </div>
+  <div class="imsg-thread">
+    <div class="imsg-ts">Today 9:41 AM</div>
+    <div class="imsg-bubble sent">
+      <div class="bubble-card" id="compose-card-mount"></div>
+      <div class="bubble-link">theathletic.com/mlb-power-rankings...</div>
+      <div class="imsg-status-line" id="compose-status"></div>
+    </div>
+  </div>
+  <div class="imsg-bar">
+    <div class="imsg-input placeholder">iMessage</div>
+    <button class="imsg-send" id="send-btn" onclick="doSend()">▲</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3 — iMESSAGE RECEIVED (Jamie's perspective)
+══════════════════════════════════════ -->
+<div id="screen-imsg-received" class="screen imsg-base">
+  <div class="imsg-status">
+    <span>9:42</span>
+    <span style="font-size:13px;font-weight:500">●●● WiFi 🔋</span>
+  </div>
+  <div class="imsg-nav">
+    <span class="imsg-back" onclick="goBack('screen-imsg-compose')">‹ Messages</span>
+    <div class="imsg-avatar" style="background:#0d0d0d">W</div>
+    <span class="imsg-name">Walker</span>
+  </div>
+  <div class="imsg-thread">
+    <div class="imsg-ts">Today 9:42 AM</div>
+    <div style="text-align:center;font-size:11px;color:#8e8e93;margin-bottom:10px;font-weight:500">JAMIE'S PHONE — INCOMING</div>
+    <div class="imsg-bubble received">
+      <div class="bubble-card" id="received-card-mount" onclick="goRecipient()"></div>
+      <div class="bubble-link" onclick="goRecipient()">theathletic.com/mlb-power-rankings...</div>
+    </div>
+  </div>
+  <div class="imsg-bar">
+    <div class="imsg-input placeholder">iMessage</div>
+    <button class="imsg-send disabled">▲</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 4 — RECIPIENT (full article, anchor-scrolled to shared card)
+══════════════════════════════════════ -->
+<div id="screen-recipient" class="screen" style="background:#fff">
+  <div class="a-status">
+    <span>9:42</span>
+    <span style="font-size:13px;font-weight:500;color:#000">●●● WiFi 🔋</span>
+  </div>
+  <div class="a-nav">
+    <span class="a-back" onclick="goBack('screen-imsg-received')">‹</span>
+    <div class="a-actions">
+      <span>💬 32</span>
+      <span>🔖</span>
+      <span>⬆</span>
+    </div>
+  </div>
+  <div class="a-scroll" id="recipient-scroll">
+    <div class="free-banner">
+      <strong>🎁 Walker shared this with you</strong>
+      Read the full article free, no subscription needed.
+    </div>
+    <div class="a-meta" style="padding-top:14px">
+      <div class="a-kicker">MLB · Power Rankings · Week 7</div>
+      <h1 class="a-title" style="font-size:20px">MLB Power Rankings: Every team has at least one reason to believe</h1>
+    </div>
+    <div class="a-body">
+      <p class="intro" style="font-size:15px;color:#333">At Power Rankings HQ, we're always wearing rose-colored glasses. This week, we're highlighting one reason to believe in each team.</p>
+      <p class="stats-note" style="margin-bottom:20px">All stats are through Monday unless otherwise noted.</p>
+      <div id="recipient-card-list"></div>
+    </div>
+    <div style="height:60px"></div>
+  </div>
+</div>
+
+</div><!-- /.phone -->
+
+<div class="proto-tag">Power Rankings · Prototype v2</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// DATA — all 30 teams
+// ══════════════════════════════════════════════════════
+const TEAMS = [
+  { rank:1, team:"Atlanta Braves", record:"28-13", avgVote:"1.0", prevRank:1, headline:'"Just one?"', body:["It's not hard to believe in the team that's No.1 in our Power Rankings, so I guess the question is: <em>Is there reason to believe this is going to last?</em> I'll answer with another question: what about this strong start is unsustainable? Bryce Elder is a surprise Cy Young candidate, but he was an All-Star in 2023. Matt Olson is off to a career-best pace, but he led the league in doubles last year and in homers in 2023.","Even if Olson slips a bit, there's room for Ronald Acuña Jr. and Austin Riley to pick up the slack. Raisel Iglesias has returned from the IL; Ha-Seong Kim was activated on Monday; Acuña is running again. The Braves are winning basically at the pace their run differential would suggest. This isn't luck. The Braves are good, with enough talent to stay that way."], byline:"Chad Jennings", photo:"acuna.png", photoPos:"center 6%", primary:"#CE1141", secondary:"#13274F" },
+  { rank:2, team:"New York Yankees", record:"26-16", avgVote:"2.5", prevRank:2, headline:'"The pieces are there, and they look good, too"', body:["Carlos Rodón returned from the IL this weekend and averaged almost 96 mph on his fastball. Gerrit Cole just made his fifth minor-league rehab start and got up to 77 pitches. The Yankees could soon have both of them in a rotation that already has Max Fried and Cam Schlittler pitching as well as anyone in the American League.","Offensively, Aaron Judge is as good as ever, Cody Bellinger is even better than he was last season, and Ben Rice leads the majors in wRC+. The Yankees would like their lineup to be a little deeper, but the trade deadline could fix that. When most of the AL is an absolute mess, why not believe in the Yankees?"], byline:"Chad Jennings", photo:"yankees_player.jpg", primary:"#003087", secondary:"#C4CED4" },
+  { rank:3, team:"Los Angeles Dodgers", record:"24-17", avgVote:"2.8", prevRank:3, headline:'"Plenty\'s going wrong, and they\'re still in first"', body:["You can tell that something's going wrong with the Dodgers because they have competition. The Padres are matching them win for win, which isn't part of the plan. The Dodgers are supposed to be five games ahead by now, with an eye toward keeping their relievers fresh for the postseason.","But Shohei Ohtani has been in an extended slump (.683 OPS since April 19), Kyle Tucker has been underwhelming and Tyler Glasnow is on the IL. That doesn't mean there isn't anything going right — Andy Pages is still raking, and Max Muncy is off to his strongest start in years. Imagine what happens when Ohtani <em>really</em> starts hitting."], byline:"Grant Brisbee", photo:"ohtani.jpg", primary:"#005A9C", secondary:"#EF3E42" },
+  { rank:4, team:"Chicago Cubs", record:"27-14", avgVote:"3.8", prevRank:4, headline:'"The lineup can shoulder the burden"', body:["The Cubs rank fifth in batting average, first in on-base percentage and fifth in slugging — and they've scored the third-most runs in the league. With Cade Horton out for the year and Matthew Boyd in injury timeout, they need that offensive support.","The Cubs employ nine hitters with an OPS better than .715. The three outcasts — Bregman, Pete Crow-Armstrong and Dansby Swanson — all have the talent and track records to think they'll get there too. The NL Central is really good and really deep, and that's the best way to describe the Cubs' offense."], byline:"Zack Meisel", photo:"cubs_player.jpg", primary:"#0E3386", secondary:"#CC3433" },
+  { rank:5, team:"Milwaukee Brewers", record:"22-16", avgVote:"5.5", prevRank:6, headline:'"The pitching staff is nails"', body:["Milwaukee's pitching staff is legitimate, even if you might not be familiar with Chad Patrick or Aaron Ashby, or you don't mess with Shane Drohan, or you might remember Kyle Harrison and DL Hall as top prospects once upon a time and not key contributors to a group that has registered a 3.43 ERA.","Of course, you can't discuss the Brewers' staff without mentioning Jacob Misiorowski, who has become appointment viewing. He averaged <strong>101.1 mph on 57 fastballs</strong> against the Yankees on Friday night. No one has touched his off-speed stuff either — probably because there's nothing off-speed about it."], byline:"Zack Meisel", photo:"misiorowski.jpg", primary:"#12284B", secondary:"#FFC52F" },
+  { rank:6, team:"Tampa Bay Rays", record:"27-13", avgVote:"5.7", prevRank:7, headline:'"It has earned it over and over again"', body:["How did the Rays get this high in our Power Rankings? Even without elite strikeout totals, they have the second-best ERA in the American League. They've hit for very little power and have the lowest position-player fWAR in the AL, yet they're slightly above-average in runs per game.","Their top three starters have a sub-3.00 ERA. Junior Caminero is hitting for power, Yandy Díaz is hitting for average and Jonathan Aranda is proving last season was no fluke. This feels like another Rays team with a sum greater than the sum of its parts."], byline:"Chad Jennings", photo:"rays_player.jpg", primary:"#092C5C", secondary:"#8FBCE6" },
+  { rank:7, team:"Pittsburgh Pirates", record:"22-19", avgVote:"6.8", prevRank:8, headline:'"There\'s much more than just Paul Skenes"', body:["Four teams rank in the top seven in both OPS and ERA. The Braves, Yankees and Dodgers are obvious answers, sure. The other team? The Pirates. Yeah, that's the company you want if you're Pittsburgh. This team is balanced. And solid. It's not just Skenes and a bunch of nondescript dudes.","The offseason additions of Brandon Lowe and Ryan O'Hearn are paying dividends. The lineup is deeper and far more daunting than it's been in years. The pitching, as expected, has been great. You want a reason to believe in the Pirates? It's as elementary as it gets: they're pretty good at everything."], byline:"Zack Meisel", photo:"pirates_player.jpg", primary:"#FDB827", secondary:"#27251F" },
+  { rank:8, team:"San Diego Padres", record:"24-16", avgVote:"7.6", prevRank:10, headline:'"Bogaerts is doing the heavy lifting"', body:["The Padres are a .500 team according to Pythagorean record, and their .297 team OBP is keeping them company with the Mets and Giants — two teams you'll have to scroll to read about. So how are the Padres doing it? That's not a rhetorical question.","Their adjusted ERA is right around the league average, and they're rocking an 87 OPS+ as a team — which is last-place stuff. If you're looking for a reason to believe, it's that they've gotten this far with Xander Bogaerts and his .778 OPS as the team's best hitter. With a more reliable lineup, the Pythag record will eventually match the actual record."], byline:"Grant Brisbee", photo:"padres_player.jpg", primary:"#2F241D", secondary:"#FFC425" },
+  { rank:9, team:"Detroit Tigers", record:"19-22", avgVote:"9.5", prevRank:5, headline:'"It won\'t get worse than this"', body:["If the Tigers can merely survive for now, eventually their injured list won't be so crowded. Thankfully for the Tigers, the AL Central acts as a defibrillator, life vest and oxygen tank all rolled into one.","If Detroit can weather Tarik Skubal's absence, Framber Valdez's antics, and injuries to Casey Mize, Justin Verlander, Kerry Carpenter, Gleyber Torres, Javier Báez, Parker Meadows, Will Vest, Beau Brieske, Troy Melton, Jackson Jobe and Paws the Tiger, perhaps the club can peak at the right time. It's just about keeping everyone's head above water."], byline:"Zack Meisel", photo:"tigers_player.jpg", primary:"#0C2340", secondary:"#FA4616" },
+  { rank:10, team:"Seattle Mariners", record:"20-22", avgVote:"10.0", prevRank:9, headline:'"Emerson Hancock"', body:["There's only so much a single pitcher can do for a team's fortunes, but Hancock is an easy choice more for what he represents. He was a first-round pick with an electric arm and the strikeout rate of a sinkerballer from the 1970s — the kind of stuff-vs.-results dissonance that some pitchers never escape. And then the results started matching the stuff.","Was the Mariners' braintrust responsible for the turnaround? You have to hope so, and it's a sign that Seattle is still in the 'making baseball players better' business. That's just about the only one a team needs to be in, really."], byline:"Grant Brisbee", photo:"mariners_player.jpg", primary:"#0C2C56", secondary:"#005C5C" },
+  { rank:11, team:"St. Louis Cardinals", record:"23-17", avgVote:"10.5", prevRank:11, headline:'"Jordan Walker"', body:["The Cardinals had a dented and dinged prospect, a top-five overall consensus talent who couldn't turn his tools into runs. They did their best not to overreact to his growing pains, keeping him in the majors last season even as his OPS sank under .600. It takes patience to stick with that plan.","But it takes a competent front office and coaching staff to understand which struggling talents deserve that kind of attention. It looks like they nailed it with Walker, who is somehow hitting better in May than he did in his breakout April. Every part of the story speaks well about what the Cardinals are trying to build."], byline:"Grant Brisbee", photo:"cardinals_player.jpg", primary:"#C41E3A", secondary:"#0C2340" },
+  { rank:12, team:"Texas Rangers", record:"19-22", avgVote:"11.8", prevRank:12, headline:'"That bullpen is elite"', body:["As Texas waits for Corey Seager to return to form, Evan Carter to break out and Wyatt Langford to heal, a bunch of relievers you might not recognize have carried the Rangers. Just because you haven't heard of Jacob Latz doesn't mean you can't marvel at his opponent slash line of .074/.125/.147.","He and Jacob deGrom combined on a three-hit, zero-walk shutout of the Cubs' Big Blue Machine on Sunday — it was art. Yes, Jakob Junis is still in the league, and he owns a 1.65 ERA. Texas' pen ranks first in the league in ERA — by a lot — and has kept the club afloat."], byline:"Zack Meisel", photo:"rangers_player.jpg", primary:"#003278", secondary:"#C0111F" },
+  { rank:13, team:"Athletics", record:"21-19", avgVote:"13.3", prevRank:14, headline:'"Its old-timey, pitch-to-contact rotation"', body:["It is the year 2026, and not a single starting pitcher for the A's is averaging more than a strikeout per inning. Walks are up and strikeouts are down around the league, but the A's rotation is still a bit of an outlier. What's even weirder is that this isn't a staff filled with ground-ball pitchers; the entire staff has the 27th-lowest ground-ball percentage in baseball.","The A's pitchers throw the ball, and their fielders catch it just enough to stay in first place. The A's aren't getting lucky with balls in play, so with each quality start, it's looking like the rotation they were hoping for: one that's <em>just</em> good enough to give the lineup a chance."], byline:"Grant Brisbee", photo:"athletics_player.jpg", primary:"#003831", secondary:"#EFB21E" },
+  { rank:14, team:"Cleveland Guardians", record:"22-21", avgVote:"14.5", prevRank:13, headline:'"The kids can hang"', body:["Chase DeLauter hasn't just been one of the best rookie hitters. He's been one of the league's top hitters, period. Travis Bazzana has piled up walks and stolen bases since joining him in the big leagues two weeks ago. That's the good news.","Now, Cleveland desperately needs some guys with track records — Steven Kwan, Kyle Manzardo and, if nitpicking, José Ramírez — to show signs of life, and the club could flaunt its most formidable offense in years. So far, in this bizarro world, Kwan and Manzardo rank as the team's two least productive regulars, while Austin Hedges ranks as one of the most productive. Baseball is weird."], byline:"Zack Meisel", photo:"guardians_player.jpg", primary:"#00385D", secondary:"#E50022" },
+  { rank:15, team:"Toronto Blue Jays", record:"18-23", avgVote:"15.0", prevRank:14, headline:'"The Jays have to get healthy at some point (right?)"', body:["Addison Barger just returned from an ankle injury and is back on the IL, this time with an elbow injury. He joins Alejandro Kirk, Nathan Lukes, Anthony Santander, Max Scherzer, José Berríos, Shane Bieber, Cody Ponce and Yimi García on the sidelines. Just a nightmare way to begin the season.","Yet the Blue Jays got through the weekend — after winning two of three against the Angels — just one game back in the wild-card race. Kevin Gausman and Dylan Cease have been good. Vladimir Guerrero Jr. is off to one of those slow starts when he's still far better than most hitters. Basically, the entire AL is a wreck, which makes the Jays' horrible start less damning."], byline:"Chad Jennings", photo:"bluejays_player.jpg", primary:"#134A8E", secondary:"#1D2D5C" },
+  { rank:15, team:"Miami Marlins", record:"19-22", avgVote:"15.0", prevRank:17, headline:'"Three good starters, two good middle infielders, just waiting for the outfield"', body:["Quick — what's the best middle-infield combo in baseball, and how many pairs of teammates would you guess before landing on Otto Lopez and Xavier Edwards? Through the weekend, Lopez ranked third among major-league shortstops in fWAR (behind only Bobby Witt Jr. and Elly De La Cruz) and Edwards ranked fourth among second basemen.","Sandy Alcantara, Max Meyer and Janson Junk have been a solid top three in the rotation, and the Marlins are top 10 in bullpen ERA. If you believe in the inevitable surge of their young outfield — which has been awful so far — then maybe there's room to get even better, and the NL wild-card race has plenty of room for a surprise contender."], byline:"Chad Jennings", photo:"marlins_player.jpg", primary:"#00A3E0", secondary:"#EF3340" },
+  { rank:17, team:"Boston Red Sox", record:"17-23", avgVote:"19.3", prevRank:26, headline:'"They\'re finally starting to look like themselves"', body:["After weeks of dysfunction, the Red Sox have found a rhythm. The pitching has stabilized, the lineup is producing in stretches it couldn't string together in April, and the front office's offseason bets are starting to pay off. The biggest jump in this week's rankings is real — though there's plenty of road left to make it look like more than a blip.","Rafael Devers is hitting again, Jarren Duran is back to setting the table, and the staff has cut down on the avoidable mistakes that defined the season's first month. The schedule is about to get harder. We'll see whether this stretch was the start of something or simply a soft week's worth of opponents."], byline:"Chad Jennings", photo:"redsox_player.jpg", primary:"#BD3039", secondary:"#0C2340" },
+  { rank:18, team:"Chicago White Sox", record:"19-21", avgVote:"20.3", prevRank:24, headline:'"The White Sox have emerged from the darkness"', body:["These aren't your slightly older sibling's White Sox. They survived the bleak summers, with 100 (or 121) losses and little hope. Some of the prospects they've been amassing have reached the majors and, in the case of Colson Montgomery, have thrived.","Mix in a breakout season for Davis Martin in the rotation and a jaw-dropping start for <strong>Munetaka Murakami</strong>, and maybe this situation is as simple as a young team playing free and easy and not really knowing any better. They sit right behind the Guardians at the top of the AL Central — even if this division is still below sea level."], byline:"Zack Meisel", photo:"whitesox_player.jpg", primary:"#27251F", secondary:"#C4CED4" },
+  { rank:19, team:"Arizona Diamondbacks", record:"20-20", avgVote:"20.5", prevRank:18, headline:'"Its two best players aren\'t hitting, and that should change"', body:["The Diamondbacks won't win squat without Ketel Marte and Geraldo Perdomo playing as well as they're capable of. Every scenario in which the team advances toward the postseason involves its middle infield, which should be the best in baseball.","Marte is grinding through a miserable slump, and Perdomo isn't hitting for average or power, even as he's walking more than he's striking out. If both of them get rolling at the same time, the Diamondbacks will win a lot more games — and they'll feel lucky their slow start didn't bury them even further."], byline:"Grant Brisbee", photo:"diamondbacks_player.jpg", primary:"#A71930", secondary:"#E3D4AD" },
+  { rank:20, team:"Kansas City Royals", record:"19-22", avgVote:"20.7", prevRank:23, headline:'"The veteran pitchers still have it"', body:["Seth Lugo and Michael Wacha migrated to Kansas City from San Diego ahead of the 2024 season and spearheaded the Royals' first trip to the postseason in nine years. The unions were so fruitful that the team eventually signed both pitchers to contract extensions.","Lugo and Wacha are in their mid-30s now, but they're still as productive as ever — and at a critical juncture, with Cole Ragans on the IL and Noah Cameron in a sophomore slump. Wacha owns a 2.63 ERA and has held hitters to a .188 average. Lugo's ERA is 3.21, and he has allowed one home run in 47 2/3 innings."], byline:"Zack Meisel", photo:"royals_player.jpg", primary:"#004687", secondary:"#BD9B60" },
+  { rank:21, team:"Cincinnati Reds", record:"22-19", avgVote:"20.8", prevRank:16, headline:'"Chase Burns is on his way to being an ace"', body:["For just a moment, ignore the Reds' run differential, their standing in the twisted NL Central, their offensive shortcomings and the performance of all but one starting pitcher. Let's focus on Burns. If you watched him pitch on April 10 against the Angels, you essentially witnessed a total solar eclipse — a rare phenomenon that doesn't quite compute to the human brain.","That's the only time this season Burns has allowed more than two runs. He owns a 2.11 ERA and one of the league's highest bWAR totals for a pitcher, with at least five innings in each of his eight starts. Nick Lodolo has returned, and Hunter Greene will eventually make his way back to the rotation."], byline:"Zack Meisel", photo:"reds_player.jpg", primary:"#C6011F", secondary:"#000000" },
+  { rank:21, team:"Minnesota Twins", record:"18-23", avgVote:"20.8", prevRank:20, headline:'"Byron Buxton is still a star"', body:["On Saturday in Cleveland, Buxton started the game with a solo homer off Tanner Bibee. In the 11th inning, he delivered a go-ahead RBI double. The Twins didn't record a single hit in between, but they won anyway, thanks to their dynamic center fielder. The night before, he had three hits including another homer and a double.","As he navigates his way through his 12th big-league season, he's still leaving his fingerprints all over the box score. He ranks among the league leaders in homers, boasts an .868 OPS and is on pace for a career-best WAR total. He's doing everything he can to keep the Twins relevant in an uninspiring AL Central."], byline:"Zack Meisel", photo:"twins_player.jpg", primary:"#002B5C", secondary:"#D31145" },
+  { rank:23, team:"Washington Nationals", record:"19-22", avgVote:"21.3", prevRank:20, headline:'"The NL East isn\'t the beast we expected (but James Wood is)"', body:["Seven teams have a run differential of negative-30 or worse. The Nationals play three of those teams in the next week and a half, and seven of those games are at home. That's a decent opportunity to get back to .500 and back into that mix of unexpected teams that have played their way into the wild-card hunt in the National League.","Cutting back on the errors would help — surely they can play a little cleaner. Frankly, the NL East isn't the monster we thought it was going to be, so maybe there's room for a surprise out of that division. If it's possible to believe in the Marlins, why not the Nats?"], byline:"Chad Jennings", photo:"nationals_player.jpg", primary:"#AB0003", secondary:"#14225A" },
+  { rank:24, team:"Philadelphia Phillies", record:"19-22", avgVote:"22.0", prevRank:25, headline:'"The Phillies might have already turned the corner"', body:["Look, I don't think Rob Thomson was the problem, but maybe the Phillies needed something to grab them by the shoulders and rattle them a little bit. Since Thomson was fired on April 28, the Phillies are 10-3. Bryson Stott and Alec Bohm have been helpful hitters again, and Justin Crawford's shown some life at the plate.","Zack Wheeler is healthy, and he's pitching well. Kyle Schwarber and Bryce Harper can still really hit, and Cristopher Sánchez is making an early case for the Cy Young Award. This is the Phillies, more or less, as we expected them to be. Another good stretch and they'll be right in the thick of things."], byline:"Chad Jennings", photo:"phillies_player.jpg", primary:"#E81828", secondary:"#002D72" },
+  { rank:25, team:"Los Angeles Angels", record:"16-26", avgVote:"24.5", prevRank:28, headline:'"Mike Trout is having his best season in ages"', body:["There are levels and gradations with hopeless teams. There's the fun kind of lowered expectations that comes with a full rebuild, and then there's the kind of hopeless where the team is insulting your intelligence, selling you tickets to watch minor-league players at major-league prices.","Don't forget about the bad teams with active and thriving baseball legends, though. That's a different type of fun at the yard. Tickets are easy to find, the sun's warm and the beer is cold, and a literal baseball legend is out there cooking like it was the old days. You don't have to hand it to Arte Moreno, but you can appreciate the Angels being more watchable when a baseball demigod is involved."], byline:"Grant Brisbee", photo:"angels_player.jpg", primary:"#BA0021", secondary:"#003263" },
+  { rank:26, team:"Houston Astros", record:"16-26", avgVote:"26.5", prevRank:22, headline:'"The Astros have done it before"', body:["On May 13, 2024, the Astros were 16-25 and in last place. They were finally cooked, an unceremonious end to a long run of competitive teams — the veterans got old and/or left, and there weren't enough new young players to replace them.","They won the division that year, and even if it was a struggle to get to the 88 wins to do it, it was proof that lousy starts can be overcome. The trick with the 2026 Astros is that they almost certainly aren't as talented, whether because of defections (Framber Valdez, Kyle Tucker) or entropy (Jose Altuve). Still, it's happened before. That's all they can mutter as they stare into the abyss."], byline:"Grant Brisbee", photo:"astros_player.jpg", primary:"#002D62", secondary:"#EB6E1F" },
+  { rank:26, team:"New York Mets", record:"15-25", avgVote:"26.5", prevRank:29, headline:'"How much worse can it get?"', body:["By the middle of last week, the Mets had won four of five, and maybe — <em>maybe!</em> — there was a corner to be turned. Then they ended the week by losing three of four while scoring a total of seven runs in those four games. So much for turning a corner.","One reason to believe? It can't get worse, can it? The top of the rotation is excellent, and you have to believe Bo Bichette is going to turn things around and Francisco Lindor is going to make a difference when he returns. The Mets need to climb ahead of nine teams to get back into a wild-card spot, but only two of those have a positive run differential. The good news is that other teams are bad too."], byline:"Chad Jennings", photo:"mets_player.jpg", primary:"#002D72", secondary:"#FF5910" },
+  { rank:28, team:"Baltimore Orioles", record:"19-23", avgVote:"26.8", prevRank:19, headline:'"The Orioles still have those young hitters"', body:["To believe in the Orioles is to believe that 2023 wasn't so long ago. The Orioles won 101 games that season, and their best players were Gunnar Henderson, Adley Rutschman and Kyle Bradish — three players still with the team and still in their 20s. Rutschman is having a good year, but he's also missed time on the IL. Henderson was good early, then went cold for a spell.","To believe in the Orioles is to believe they're just getting started — that Jackson Holliday has yet to even approach his peak, that Pete Alonso's recent power surge is a sign of things to come, that Shane Baz was a good addition, that Colton Cowser is going to be good again. To believe in the Orioles is to believe they've just got to be better than this."], byline:"Chad Jennings", photo:"orioles_player.jpg", primary:"#DF4601", secondary:"#000000" },
+  { rank:29, team:"Colorado Rockies", record:"16-25", avgVote:"28.5", prevRank:27, headline:'"Colorado is the normal kind of bad"', body:["This is going to be a running theme throughout this season's rankings. The Rockies are a normal kind of bad, and it's a legitimate cause for celebration. They're messing around with rookies and Rule 5 picks and low-cost veterans, trying to find quality players who might be around for the next good Rockies team — just like a bad team is supposed to.","If that doesn't read like progress, remember how historically awful they were last season. This is a team that confidently started a Rule 5 pick, TJ Rumfield, and hoped it would make things better immediately and in seasons to come. It's making them look smart, and with just that one piece of possible good news, they've pulled ahead of last year's entire good-news allotment. There's a lot of season left, too."], byline:"Grant Brisbee", photo:"rockies_player.jpg", primary:"#33006F", secondary:"#C4CED4" },
+  { rank:30, team:"San Francisco Giants", record:"17-24", avgVote:"29.8", prevRank:30, headline:'"Dramatic changes are already being made"', body:["The Giants aren't rebuilding, but they're not <em>not</em> rebuilding either. They're in a place where they have veterans who can't feel safe — which is something you can also say about most rebuilding teams. The biggest difference is that these veterans can afford the guac at Chipotle, which makes them a little overqualified to be the happy-to-be-here veterans on most teams looking toward the future.","That doesn't mean there are a lot of Giants veterans who feel comfortable right now. Sending your starting catcher to the American League and your erstwhile closer to the Pacific Coast League is one way to get the attention of a veteran clubhouse. The time for patience is over. It's time to start breaking things."], byline:"Grant Brisbee", photo:"giants_player.jpg", primary:"#FD5A1E", secondary:"#27251F" },
+];
+
+// Convert hex to rgba
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substr(0,2), 16);
+  const g = parseInt(h.substr(2,2), 16);
+  const b = parseInt(h.substr(4,2), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+// Perceived luminance — brighter colors return higher values
+function luminance(hex) {
+  const h = hex.replace('#','');
+  const r = parseInt(h.substr(0,2),16) / 255;
+  const g = parseInt(h.substr(2,2),16) / 255;
+  const b = parseInt(h.substr(4,2),16) / 255;
+  return 0.299*r + 0.587*g + 0.114*b;
+}
+// Brighten a hex color until its luminance hits target (preserves hue)
+function brightenIfDark(hex, target = 0.45) {
+  const h = hex.replace('#','');
+  let r = parseInt(h.substr(0,2),16);
+  let g = parseInt(h.substr(2,2),16);
+  let b = parseInt(h.substr(4,2),16);
+  const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+  if (lum >= target) return hex;
+  const factor = target / Math.max(lum, 0.05);
+  r = Math.min(255, Math.round(r * factor));
+  g = Math.min(255, Math.round(g * factor));
+  b = Math.min(255, Math.round(b * factor));
+  return '#' + [r,g,b].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+// Pick the brighter of the two team colors; brighten further if still too dark
+function pickAccent(team) {
+  const winner = luminance(team.primary) >= luminance(team.secondary) ? team.primary : team.secondary;
+  return brightenIfDark(winner);
+}
+
+// Compute movement: positive = moved up, negative = moved down
+function movementOf(team) {
+  return team.prevRank - team.rank; // e.g. prev 6, curr 5 → +1
+}
+function movementChip(team) {
+  const m = movementOf(team);
+  if (m === 0) return `<span class="rc-move steady" title="No change"><span>No</span><span>change</span></span>`;
+  if (m > 0) return `<span class="rc-move up">▲ ${m}</span>`;
+  return `<span class="rc-move down">▼ ${Math.abs(m)}</span>`;
+}
+function isBigMover(team) {
+  return Math.abs(movementOf(team)) >= 3;
+}
+function moverBand(team) {
+  const m = movementOf(team);
+  if (Math.abs(m) < 3) return '';
+  const dir = m > 0 ? 'up' : 'down';
+  const arrow = m > 0 ? '▲' : '▼';
+  const verb = m > 0 ? 'Up' : 'Down';
+  const ctx = m > 0
+    ? `Climbed from #${team.prevRank} last week`
+    : `Fell from #${team.prevRank} last week`;
+  return `
+    <div class="rc-mover-band ${dir}">
+      <div class="rc-mover-arrow">${arrow}</div>
+      <div class="rc-mover-text-wrap">
+        <div class="rc-mover-headline">${verb} <em>${Math.abs(m)} spots</em></div>
+        <div class="rc-mover-context">${ctx}</div>
+      </div>
+    </div>
+  `;
+}
+
+const SHARE_ICON_SVG = `<svg viewBox="0 0 24 24"><path d="M12 4v12M12 4l-5 5M12 4l5 5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></svg>`;
+
+// Auto-tune object-position per photo so heads aren't cropped
+// Most Wikipedia infobox photos place the subject's face in the upper third to upper half of the frame.
+// We bias the visible window to that band per aspect ratio.
+function tunePhotoPos(img) {
+  if (img.dataset.posSet === '1') return; // manual override wins
+  if (!img.naturalWidth) return;
+  const aspect = img.naturalWidth / img.naturalHeight;
+  let pos;
+  if (aspect < 0.62) pos = 'center 18%';        // very tall portrait
+  else if (aspect < 0.78) pos = 'center 25%';   // portrait
+  else if (aspect < 0.95) pos = 'center 30%';   // square-leaning
+  else if (aspect < 1.20) pos = 'center 35%';   // landscape-leaning
+  else pos = 'center 38%';                       // landscape
+  img.style.objectPosition = pos;
+}
+
+// Render a single in-article card
+function renderCard(team, idx, opts = {}) {
+  const accent = pickAccent(team);
+  const dim = hexToRgba(accent, 0.18);
+  const styleVars = `--team-color:${accent};--team-color-2:${team.secondary};--team-color-dim:${dim};`;
+  const big = isBigMover(team);
+  const isShared = opts.shared === true;
+  const highlight = (big || isShared) ? 'highlight' : '';
+  const prevLabel = `Last week #${team.prevRank}`;
+  const bodyParas = Array.isArray(team.body) ? team.body.map(p => `<p>${p}</p>`).join('') : `<p>${team.body}</p>`;
+
+  return `
+    <div class="rank-card ${highlight}" style="${styleVars}" data-team-idx="${idx}" id="rank-card-${idx}">
+      <div class="rc-hero">
+        <img class="rc-photo" src="prototype-assets/${team.photo}" alt="${team.team}" ${team.photoPos ? `data-pos-set="1" style="object-position:${team.photoPos}"` : ''} onload="tunePhotoPos(this)" onerror="this.style.display='none'">
+        <div class="rc-grad"></div>
+        <div class="rc-accent"></div>
+        <div class="rc-share-cluster" onclick="event.stopPropagation();openSheet(${idx})">
+          <span class="rc-share-label">Share free</span>
+          <span class="rc-share-icon-wrap">${SHARE_ICON_SVG}</span>
+        </div>
+        <div class="rc-rank-block">
+          <div class="rc-rank-num"><span class="hash">#</span>${team.rank}</div>
+          ${movementChip(team)}
+        </div>
+        <div class="rc-team-block">
+          <div class="rc-team-name">${team.team}</div>
+          <div class="rc-team-meta">${team.record} · ${prevLabel}</div>
+        </div>
+      </div>
+      ${moverBand(team)}
+      <div class="rc-headline">
+        <span class="rc-headline-label">One reason to believe</span>
+        ${team.headline}
+      </div>
+      <div class="rc-body">${bodyParas}</div>
+      <div class="rc-footer">
+        <div class="rc-byline">— <strong>${team.byline}</strong></div>
+        <div class="rc-brand"><div class="rc-brand-dot">A</div>The Athletic</div>
+      </div>
+    </div>
+  `;
+}
+
+// Plain-text first ~30 words of body for the share-state teaser
+function bodyTeaser(body, maxWords = 28) {
+  const text = (Array.isArray(body) ? body[0] : body).replace(/<[^>]+>/g, '');
+  const words = text.split(/\s+/);
+  if (words.length <= maxWords) return text;
+  return words.slice(0, maxWords).join(' ') + '…';
+}
+
+// Compact version for share-sheet / iMessage bubble — includes the rank-context label and a body teaser
+function renderCompact(team, opts = {}) {
+  const accent = pickAccent(team);
+  const dim = hexToRgba(accent, 0.18);
+  const styleVars = `--team-color:${accent};--team-color-2:${team.secondary};--team-color-dim:${dim};`;
+  const big = isBigMover(team);
+  const meta = opts.meta || `${team.record}`;
+  const teaser = bodyTeaser(team.body);
+  return `
+    <div class="rank-card" style="${styleVars}">
+      <div class="rc-hero">
+        <img class="rc-photo" src="prototype-assets/${team.photo}" alt="${team.team}" ${team.photoPos ? `data-pos-set="1" style="object-position:${team.photoPos}"` : ''} onload="tunePhotoPos(this)" onerror="this.style.display='none'">
+        <div class="rc-grad"></div>
+        <div class="rc-accent"></div>
+        <div class="rc-context-pill">MLB Power Ranking · Wk 7</div>
+        <div class="rc-rank-block">
+          <div class="rc-rank-num"><span class="hash">#</span>${team.rank}</div>
+          ${movementChip(team)}
+        </div>
+        <div class="rc-team-block">
+          <div class="rc-team-name">${team.team}</div>
+          <div class="rc-team-meta">${meta}</div>
+        </div>
+      </div>
+      ${big ? moverBand(team) : ''}
+      <div class="rc-headline">
+        <span class="rc-headline-label">One reason to believe</span>
+        ${team.headline}
+      </div>
+      <div class="rc-body-teaser">${teaser} <span class="read-more">Read more →</span></div>
+    </div>
+  `;
+}
+
+// ── Render the article list ──
+function renderArticle() {
+  const html = TEAMS.map((t, i) => renderCard(t, i)).join('');
+  document.getElementById('card-list').innerHTML = html;
+}
+renderArticle();
+
+// ── State for which team was last shared ──
+let lastSharedIdx = 17; // default to White Sox (#18) — index 17 — the editorial showcase
+
+function openSheet(idx) {
+  lastSharedIdx = idx;
+  const t = TEAMS[idx];
+  document.getElementById('share-mini').innerHTML = renderCompact(t);
+  document.getElementById('share-title').textContent = `${t.team} · Power Rankings Week 7`;
+  document.getElementById('share-overlay').classList.add('open');
+}
+function closeSheet() { document.getElementById('share-overlay').classList.remove('open'); }
+
+function goCompose() {
+  closeSheet();
+  const t = TEAMS[lastSharedIdx];
+  rebuildBubble('compose-card-mount', t);
+  document.getElementById('compose-status').textContent = '';
+  show('screen-imsg-compose');
+}
+function rebuildBubble(mountId, t) {
+  const mount = document.getElementById(mountId);
+  // Use the rank-card markup but stripped of card-radius (the parent .bubble-card handles that)
+  mount.innerHTML = renderCompact(t)
+    .replace(/<div class="rank-card"[^>]*>/, '')
+    .replace(/<\/div>\s*$/, '');
+  // Carry the team-color CSS variables onto the mount element itself
+  const accent = pickAccent(t);
+  const dim = hexToRgba(accent, 0.18);
+  mount.setAttribute('style', `--team-color:${accent};--team-color-2:${t.secondary};--team-color-dim:${dim};`);
+}
+function doSend() {
+  // Quick "delivered" status, then transition to received view
+  document.getElementById('compose-status').innerHTML = '<span class="imsg-delivered">Delivered</span>';
+  setTimeout(() => {
+    const t = TEAMS[lastSharedIdx];
+    rebuildBubble('received-card-mount', t);
+    show('screen-imsg-received');
+  }, 700);
+}
+function goRecipient() {
+  // Render full article with the shared card flagged for highlight
+  const html = TEAMS.map((t, i) => renderCard(t, i, { shared: i === lastSharedIdx })).join('');
+  document.getElementById('recipient-card-list').innerHTML = html;
+  show('screen-recipient');
+  // Anchor-scroll to the shared card. Wait for images to lay out first.
+  scrollRecipientToShared();
+}
+function scrollRecipientToShared() {
+  const scroller = document.getElementById('recipient-scroll');
+  // Scope the lookup to the recipient list (the article view also has a card with this id, hidden)
+  const target = document.querySelector('#recipient-card-list #rank-card-' + lastSharedIdx);
+  if (!scroller || !target) return;
+  // Compute cumulative offset from scroller to target
+  const scrollerRect = scroller.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const delta = targetRect.top - scrollerRect.top + scroller.scrollTop;
+  scroller.scrollTo({ top: Math.max(0, delta - 24), behavior: 'instant' });
+  // Re-run after image loads in case layout shifted
+  setTimeout(() => {
+    const r2 = target.getBoundingClientRect();
+    const d2 = r2.top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    if (Math.abs(d2 - 24) > 4) scroller.scrollTo({ top: Math.max(0, d2 - 24), behavior: 'instant' });
+  }, 350);
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function goBack(id) { show(id); }
+</script>
+</body>
+</html>
